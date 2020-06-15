@@ -61,40 +61,43 @@
 
   <script src="./libs/http.js"></script>
   <script>
-    //1.登录按钮注册点击事件
-    $('.input_sub').on('click', function (e) {
-      e.preventDefault();
-      var username = $('.input_txt').val().trim();
-      var password = $('.input_pass').val().trim();
-      if (username == '' || password == '') {
-        $('#myModal').modal();
-        $('.modal-body>p').text('求求你输入不要空着昂')
-        //alert('求求你输入不要空着昂')
-        return;
-      };
-      $.ajax({
-        type: 'post',
-        url: BigNew.user_login,
-        data: {
-          username,
-          password
-        },
-        success: function (backData) {
-          console.log(backData);
-          $('#myModal').modal();
-          $('.modal-body>p').text(backData.msg)
-          $('#myModal').on('hide.bs.modal', function (e) {
-            // do something...
-              if (backData.code == 200) {
-                $('.modal-body>p').text(backData.msg);
-                //alert(backData.msg);
-                window.location.href = 'index.html';
-                localStorage.set('token',backData.token);
-              }
-          })
+    $(function () {
+      //1.给登录按钮设置点击事件
+      $('.input_sub').on('click', function (e) {
+        //阻止默认提交事件
+        e.preventDefault();
+        var username = $('.input_txt').val().trim();
+        var password = $('.input_pass').val().trim();
+        if (username == '' || password == '') {
+          $('#myModal').modal()
+          $('.modal-body>p').text('求求你不要为空');
+          //alert('求求你不要为空');
+          return;
         }
-      })
+        $.ajax({
+          type: 'post',
+          url: BigNew.user_login,
+          data: {
+            username,
+            password
+          },
+          success: function (backData) {
+            console.log(backData);
+            $('#myModal').modal()
+            $('.modal-body>p').text(backData.msg);
 
+            if (backData.code == 200) {
+              $('.modal-body>p').text(backData.msg);
+              window.localStorage.setItem('token', backData.token);
+              $('#myModal').on('hide.bs.modal', function (e) {
+                window.location.href = './index.html';
+
+              })
+            }
+          }
+        })
+      })
+      //2.
     })
   </script>
 </body>
