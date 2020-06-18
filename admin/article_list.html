@@ -13,6 +13,8 @@
     <script src="./libs/jquery-1.12.4.min.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
+    <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./libs/jquery.twbsPagination.js"></script>
 </head>
 
 <body>
@@ -69,9 +71,201 @@
                 </tbody>
             </table>
             <div class="row text-center">
+                <ul id="pagination" class="pagination-sm"></ul>
+                <p style="display: none;">没有数据</p>
             </div>
         </div>
     </div>
 </body>
+
+<script src="./libs/http.js"></script>
+<!-- 下拉菜单模板 -->
+<script id="select_list" type="text/html">
+    <option value="">所有分类</option>
+    {{each data v}}
+    <option value="{{v.id}}">{{v.name}}</option>
+    {{/each}}
+</script>
+
+<script id="article_list" type="text/html">
+    {{each data.data v}}
+    <tr>
+        <td>{{v.title}}</td>
+        <td>{{v.author}}</td>
+        <td>{{v.category}}</td>
+        <td class="text-center">{{v.date}}</td>
+        <td class="text-center">{{v.state}}</td>
+        <td class="text-center">
+            <a href="article_edit.html" class="btn btn-default btn-xs">编辑</a>
+            <a href="javascript:void(0);" data_id="{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
+        </td>
+    </tr>
+    {{/each}}
+</script>
+<script>
+    $(function () {
+        //1.下拉菜单
+        $.ajax({
+            url: BigNew.category_list,
+            success: function (backData) {
+                // console.log(backData);
+                if (backData.code == 200) {
+                    var resHtml = template('select_list', backData);
+                    $('#selCategory').html(resHtml);
+                }
+            }
+        });
+        var current = 1;
+
+        function getPage(myPage, fn) {
+            $.ajax({
+                url: BigNew.article_query,
+                data: {
+                    type: $('#selCategory').val().trim(),
+                    state: $('#selStatus').val().trim(),
+                    page: myPage,
+                    perpage: 2
+                },
+                success: function (backData) {
+                    //console.log(backData);
+                    if (backData.code == 200) {
+                        var res = template('article_list', backData);
+                        $('tbody').html(res);
+                        if (backData.data.data != 0 && fn != null) {
+                            $('#pagination').show().next().hide();
+                            fn(backData)
+                        } else if (backData.data.data == 0 && current == 1) {
+                            $('#pagination').hide().next().show();
+                        } else if(backData.data.data == 0 && backData.data.totalPage == current -1){
+                            current--;
+                            $('#pagination').twbsPagination('changeTotalPages',
+                                backData.data.totalPage, current);
+                        }
+                    }
+                }
+            })
+        };
+        //2.所有文章
+        getPage(1, function (backData) {
+            $('#pagination').twbsPagination({
+                totalPages: 35,
+                visiblePages: 7,
+                first: '首页',
+                prev: '上一页',
+                next: '下一页',
+                last: '尾页',
+                onPageClick: function (event, page) {
+                    console.log(page);
+                    current = page;
+                    getPage(page, null);
+                }
+            });
+        })
+
+        //3.筛选
+        $('#btnSearch').on('click', function (e) {
+            e.preventDefault();
+            getPage(1, function (backData) {
+                $('#pagination').twbsPagination('changeTotalPages',
+                    backData.data.totalPage, 1);
+            })
+        })
+
+        //4.删除
+        $('tbody').on('click', 'a.delete', function () {
+            var id = $(this).attr('data_id');
+            $.ajax({
+                type: 'post',
+                url: BigNew.article_delete,
+                data: {
+                    id
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    if (backData.code == 204) {
+                        alert('删除成功');
+                        getPage(current, function (backData) {
+                            $('#pagination').twbsPagination('changeTotalPages',
+                                backData.data.totalPage, current);
+                        })
+                    }
+                }
+            })
+        })
+
+
+
+        //_______________________________________________________
+        // $.ajax({
+        //     url: BigNew.article_query,
+        //     data: {
+        //         type: $('#selCategory').val().trim(),
+        //         state: $('#selStatus').val().trim(),
+        //         page: 1,
+        //         perpage: 5
+        //     },
+        //     success: function (backData) {
+        //         //console.log(backData);
+        //         if (backData.code == 200) {
+        //             var res = template('article_list', backData);
+        //             $('tbody').html(res);
+        //             //页码
+        //             $('#pagination').twbsPagination({
+        //                 totalPages: 35,
+        //                 visiblePages: 7,
+        //                 first: '首页',
+        //                 prev: '上一页',
+        //                 next: '下一页',
+        //                 last: '尾页',
+        //                 onPageClick: function (event, page) {
+        //                     console.log(page);
+        //                     $.ajax({
+        //                         url: BigNew.article_query,
+        //                         data: {
+        //                             type: $('#selCategory').val().trim(),
+        //                             state: $('#selStatus').val().trim(),
+        //                             page: page,
+        //                             perpage: 5
+        //                         },
+        //                         success: function (backData) {
+        //                             //console.log(backData);
+        //                             if (backData.code == 200) {
+        //                                 var res = template('article_list',
+        //                                     backData);
+        //                                 $('tbody').html(res);
+        //                             }
+        //                         }
+        //                     })
+        //                 }
+        //             });
+
+        //         }
+        //     }
+        // })
+
+        // //3.筛选
+        // $('#btnSearch').on('click', function (e) {
+        //     e.preventDefault();
+        //     $.ajax({
+        //         url: BigNew.article_query,
+        //         data: {
+        //             type: $('#selCategory').val().trim(),
+        //             state: $('#selStatus').val().trim(),
+        //             page: 1,
+        //             perpage: 5
+        //         },
+        //         success: function (backData) {
+        //             //console.log(backData);
+        //             if (backData.code == 200) {
+        //                 var res = template('article_list', backData);
+        //                 $('tbody').html(res);
+        //                 $('#pagination').twbsPagination('changeTotalPages',
+        //                     backData.data.totalPage, 1);
+        //             }
+        //         }
+        //     })
+        // })
+    })
+</script>
 
 </html>
