@@ -210,5 +210,111 @@
     <script src="./js/jquery-1.12.4.min.js"></script>
 
 </body>
+<script id="article" type="text/html">
+    {{data.author}} 发布于{{data.date}}&nbsp;&nbsp;&nbsp;分类: {{data.category}}&nbsp;&nbsp;&nbsp;阅读:
+    ({{data.read}})&nbsp;&nbsp;&nbsp;评论: ({{data.comments}})
+</script>
+
+<!-- 评论模板 -->
+<script id="get_comment" type="text/html">
+    {{each data v}}
+    <div class="comment_detail_list">
+        <div class="person_pic fl">{{v.author.substr(0,1)}}</div>
+        <div class="name_time fl"><b>{{v.author}}</b><span>{{v.date}} {{v.time}}</span></div>
+        <div class="comment_text fl">
+            {{v.content}}
+        </div>
+    </div>
+    {{/each}}
+</script>
+<script>
+    $(function () {
+        //1.进入页面渲染文章
+        var article_id = window.location.search.split('=')[1];
+        function getData() {
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/article',
+                data: {
+                    id: article_id
+                },
+                success: function (backData) {
+                    //console.log(backData);
+                    if (backData.code == 200) {
+                        $('.article_title').text(backData.data.title);
+                        $('.article_con').text(backData.data.content);
+                        $('.article_info').html(template('article', backData));
+                        $('div.breadcrumb>a:eq(1)').text(backData.data.category);
+
+                        if (backData.data.prev.title != null) {
+                            $('.article_links>a:eq(0)').text(backData.data.prev.title);
+                            $('.article_links>a:eq(0)').attr('href', 'article.html?id=' + backData
+                                .data
+                                .prev.id);
+                        } else {
+                            $('.article_links>a:eq(0)').text('你是第一章');
+                        }
+
+                        if (backData.data.next != null) {
+                            $('.article_links>a:eq(1)').text(backData.data.next.title);
+                            $('.article_links>a:eq(1)').attr('href', 'article.html?id=' + backData
+                                .data
+                                .prev.id);
+                        } else {
+                            $('.article_links>a:eq(1)').text('你是最后一章');
+                        }
+
+                    }
+                }
+            });
+        }
+
+        getData();
+
+        //2.热论
+        $.ajax({
+            url: 'http://localhost:8080/api/v1/index/get_comment',
+            data: {
+                articleId: article_id
+            },
+            success: function (backData) {
+                //console.log(backData);
+                if (backData.code == 200) {
+                    $('.comment_list_con').html(template('get_comment', backData))
+                }
+            }
+        });
+
+        //评论
+        $('.comment_sub').on('click', function (e) {
+            e.preventDefault();
+            var commentName = $('.comment_name').val().trim();
+            var commentInput = $('.comment_input').val().trim();
+            if (commentName == "" && commentInput == "") {
+                alert('不要为空');
+                return;
+            }
+            $.ajax({
+                type: 'post',
+                url: 'http://localhost:8080/api/v1/index/post_comment',
+                data: {
+                    author: commentName,
+                    content: commentInput,
+                    articleId: article_id
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    if (backData.code == 201) {
+                        alert('发表成功等待验证');
+                        $('.comment_name').val('')
+                        $('.comment_input').val('')
+                        getData();
+                    }
+
+                }
+            })
+        })
+
+    })
+</script>
 
 </html>

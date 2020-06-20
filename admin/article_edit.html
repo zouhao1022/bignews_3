@@ -128,22 +128,25 @@
         //5.进入页面获取文章信息
         var edit_id = window.location.search.split('=')[1];
         $('#articleId').val(edit_id);
-        $.ajax({
-            url: BigNew.article_search,
-            data: {
-                id: edit_id
-            },
-            success: function (backData) {
-                console.log(backData);
-                if (backData.code == 200) {
-                    $('#inputTitle').val(backData.data.title)
-                    $('.article_cover').attr('src', backData.data.cover);
-                    $('.category').val(backData.data.categoryId);
-                    $('#testico').val(backData.data.date);
-                    editor.txt.html(backData.data.content);
+        setTimeout(function () {
+            $.ajax({
+                url: BigNew.article_search,
+                data: {
+                    id: edit_id
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    if (backData.code == 200) {
+                        $('#inputTitle').val(backData.data.title)
+                        $('.article_cover').attr('src', backData.data.cover);
+                        $('.category').val(backData.data.categoryId);
+                        $('#testico').val(backData.data.date);
+                        editor.txt.html(backData.data.content);
+                    }
                 }
-            }
-        });
+            });
+        }, 0)
+
 
         //6.点击修改
         function edit(state) {

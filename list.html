@@ -227,6 +227,77 @@
     </div>
     <!-- 导包template -->
     <script src="./js/template-web.js"></script>
+    <script id="list_search" type="text/html">
+        {{each data.data v}}
+        <div class="common_news_list">
+            <a href="./article.html?id={{v.id}}" class="list_pic"><img src="{{v.cover}}" alt=""></a>
+            <h4><a href="./article.html?id={{v.id}}">{{v.title}} </a></h4>
+            <p>{{@ v.intro}}
+            </p>
+            <div class="new_info">
+                <span>标签：{{v.category}}&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<i class="fa fa-eye"></i>&nbsp;阅读(
+                    {{v.read}}
+                    )&nbsp;&nbsp;&nbsp;<i class="fa fa-commenting"></i>&nbsp;评论( {{v.comments}} )</span>
+                <b>发布于 {{v.date}}</b>
+            </div>
+        </div>
+        {{/each}}
+    </script>
 </body>
+
+<script>
+    $(function () {
+        //1.进入页面判断进入页面方式显示数据
+        var list_id = window.location.search.split('=')[1];
+        var list_way = window.location.search.split('=')[0];
+        //console.log(list_id, list_way);
+
+        if (list_id == undefined) {
+            window.location.href = './index.html';
+        } else if (list_way == '?categoryId') {
+            //文章类型点击进来的
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/search',
+                data: {
+                    type: list_id,
+                    page: 1,
+                    parpage: 6
+                },
+                success: function (backData) {
+                    //console.log(backData);
+                    if (backData.code == 200) {
+                        var resHtml = template('list_search', backData);
+                        $('div.setfr').html('<div class="list_title"><h3>' + backData.data.data[0]
+                            .category + '</h3></div>' + resHtml)
+                    }
+                }
+            })
+        } else if (list_way == '?search') {
+            //搜索按钮点击进来的
+            list_id = decodeURI(list_id);
+            console.log(list_id);
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/search',
+                data: {
+                    key: list_id,
+                    page: 1,
+                    parpage: 6
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    if (backData.code == 200) {
+                        var resHtml = template('list_search', backData);
+                        $('div.setfr').html('<div class="list_title"><h3>' + backData.data.data[0]
+                            .category + '</h3></div>' + resHtml)
+                    }
+                }
+            })
+        };
+
+        //2.评论
+        
+
+    })
+</script>
 
 </html>

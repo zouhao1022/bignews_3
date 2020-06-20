@@ -12,6 +12,10 @@
   <link rel="stylesheet" href="css/main.css">
   <script src="./libs/jquery-1.12.4.min.js"></script>
   <script src="./libs/template-web.js"></script>
+  <!-- 页码插件 -->
+  <script src="./libs/template-web.js"></script>
+  <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+  <script src="./libs/jquery.twbsPagination.js"></script>
 </head>
 
 <body>
@@ -142,24 +146,148 @@
         </tbody>
       </table>
       <div class="row text-center">
-        <ul class="pagination pagination-sm">
-          <li class="page-item first disabled"><a href="#" class="page-link">首页</a></li>
-          <li class="page-item prev disabled"><a href="#" class="page-link">上一页</a></li>
-          <li class="page-item active"><a href="#" class="page-link">1</a></li>
-          <li class="page-item"><a href="#" class="page-link">2</a></li>
-          <li class="page-item"><a href="#" class="page-link">3</a></li>
-          <li class="page-item"><a href="#" class="page-link">4</a></li>
-          <li class="page-item"><a href="#" class="page-link">5</a></li>
-          <li class="page-item"><a href="#" class="page-link">6</a></li>
-          <li class="page-item"><a href="#" class="page-link">7</a></li>
-          <li class="page-item next"><a href="#" class="page-link">下一页</a></li>
-          <li class="page-item last"><a href="#" class="page-link">尾页</a></li>
-        </ul>
         <ul id="pagination" class="pagination-sm"></ul>
+        <!-- <p style="display: none;">没有数据</p> -->
       </div>
 
     </div>
   </div>
 </body>
+<script src="./libs/http.js"></script>
+<script id="comment_list" type="text/html">
+  {{each data.data v}}
+  {{if v.state == '待审核'}}
+  <tr class="danger">
+    {{else}}
+  <tr>
+    {{/if}}
+    <td>{{v.author}}</td>
+    <td>{{v.content}}</td>
+    <td>《{{v.title}}》</td>
+    <td>{{v.date}} {{v.time}}</td>
+    <td>{{v.state}}</td>
+    <td class="text-center">
+      {{if v.state == '待审核'}}
+      <a href="javascript:void(0);;" data_id="{{v.id}}" class="btn btn-info btn-xs suer">批准</a>
+      {{else if v.state == '已通过'}}
+      <a href="javascript:void(0);;" data_id="{{v.id}}" class="btn btn btn-warning btn-xs refuse">拒绝</a>
+      {{/if}}
+      <a href="javascript:void(0);;" data_id="{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
+    </td>
+  </tr>
+  {{/each}}
+</script>
+<script>
+  $(function () {
+    //1.渲染评论页面
+
+    var current = 1
+
+    function getData(page, fn) {
+      $.ajax({
+        url: BigNew.comment_list,
+        data: {
+          page: page,
+          perpage: 6
+        },
+        success: function (backData) {
+          console.log(backData);
+          if (backData.code == 200) {
+            $('tbody').html(template('comment_list', backData))
+            if (backData.data.data.length != 0 && fn != null) {
+              fn(backData);
+            } else if (backData.data.data.length == 0 && backData.data.totalPage == current - 1) {
+              current--;
+              $('#pagination').twbsPagination('changeTotalPages',
+                backData.data.totalPage, current);
+            }
+
+          }
+        }
+      })
+    }
+
+    getData(1, function (backData) {
+      $('#pagination').twbsPagination({
+        totalPages: backData.data.totalPage,
+        visiblePages: 7,
+        first: '首页',
+        prev: '上一页',
+        next: '下一页',
+        last: '尾页',
+        onPageClick: function (event, page) {
+          console.log(page);
+          current = page;
+          getData(page, null);
+        }
+      });
+    });
+    //页码
+
+
+    //2.评审通过
+    $('tbody').on('click', '.suer', function () {
+      var id = $(this).attr('data_id');
+      $.ajax({
+        type: 'post',
+        url: BigNew.comment_pass,
+        data: {
+          id: id
+        },
+        success: function (backData) {
+          console.log(backData);
+          if (backData.code = 200) {
+            alert('已通过');
+            getData(current, null);
+          }
+        }
+      })
+    });
+
+    //3.拒绝
+    $('tbody').on('click', '.refuse', function () {
+      var id = $(this).attr('data_id');
+      $.ajax({
+        type: 'post',
+        url: BigNew.comment_reject,
+        data: {
+          id: id
+        },
+        success: function (backData) {
+          console.log(backData);
+          if (backData.code = 200) {
+            alert('已拒绝');
+            getData(current, );
+          }
+        }
+      })
+    });
+
+
+
+    //4.删除
+    $('tbody').on('click', '.delete', function () {
+      var id = $(this).attr('data_id');
+      $.ajax({
+        type: 'post',
+        url: BigNew.comment_delete,
+        data: {
+          id: id
+        },
+        success: function (backData) {
+          console.log(backData);
+          if (backData.code = 200) {
+            alert('已删除');
+            getData(current, function (backData) {
+              $('#pagination').twbsPagination('changeTotalPages',
+                backData.data.totalPage, current);
+            });
+          }
+        }
+      })
+    });
+
+  })
+</script>
 
 </html>
